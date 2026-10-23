@@ -1,0 +1,7 @@
+__pycache__/
+*.egg-info/
+.pytest_cache/
+data/
+results/
+*.h5
+.DS_Store

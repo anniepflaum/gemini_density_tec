@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gemini-density-tec"
+version = "0.1.0"
+description = "Rocket-to-receiver slant electron content from GEMINI outputs"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26", "scipy", "h5py", "xarray", "gemini3d @ git+https://github.com/gemini3d/pygemini.git@6168ba3cebdfd43690f1eecf30404cf482ab860b"]
+
+[project.scripts]
+gemini-density-tec = "gemini_density_tec.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.optional-dependencies]
+notebook = ["ipykernel", "nbformat", "nbclient", "ipywidgets", "pandas", "pyproj"]
