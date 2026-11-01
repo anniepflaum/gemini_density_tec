@@ -3,7 +3,8 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-from .cli import rows, position, utc
+from .cli import rows, position, utc, FRAME
+from datetime import datetime, timedelta, timezone
 from .model import Model
 from .tec import Re, geographic, integrate
 
@@ -42,13 +43,25 @@ def cumulative_tec(s, ne):
 
 
 class LOSViewer:
-    def __init__(self, directory):
+    def __init__(self, directory, *, time_source="manifest", trajectories=None, receivers=None):
         self.directory = Path(directory)
         self.model = Model(directory)
-        self.frames = sorted(rows(self.directory/'frame_times.csv'), key=lambda r: utc(r['model_time_utc']))
-        self.receivers = {r['receiver_id']: position(r) for r in rows(self.directory/'receivers.csv')}
+        if time_source == "filename":
+            self.frames = []
+            for path in sorted(self.directory.glob("*.h5")):
+                match = FRAME.fullmatch(path.name)
+                if match:
+                    time = datetime.strptime(match[1], "%Y%m%d").replace(tzinfo=timezone.utc) + timedelta(seconds=float(match[2]))
+                    self.frames.append(dict(filename=path.name, model_time_utc=time.isoformat()))
+        elif time_source == "manifest":
+            self.frames = sorted(rows(self.directory/'frame_times.csv'), key=lambda r: utc(r['model_time_utc']))
+        else:
+            raise ValueError("time_source must be filename or manifest")
+        if not self.frames:
+            raise ValueError("No output frames found")
+        self.receivers = {r['receiver_id']: position(r) for r in rows(receivers or self.directory/'receivers.csv')}
         self.tracks = {}
-        for r in rows(self.directory/'trajectories.csv'):
+        for r in rows(trajectories or self.directory/'trajectories.csv'):
             self.tracks.setdefault(r['rocket_id'], []).append((utc(r['time_utc']).timestamp(), position(r)))
         for key, track in self.tracks.items():
             track.sort(key=lambda item: item[0])
